@@ -4,6 +4,7 @@ import string
 import uuid
 from itertools import chain, combinations
 from operator import itemgetter
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ from IPython.core.display import display
 trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 def completeness(srs):
-    """return completeness score for series - i.e., the percentage of non-null values in a series.
+    """Return completeness score for series - i.e., the percentage of non-null values in a series.
 
     Arguments:
         srs {pandas.Series}
@@ -20,6 +21,9 @@ def completeness(srs):
     Returns:
         float
     """
+    if srs[srs.notnull()].empty:
+        return 0.0
+
     return float(srs.notnull().sum()) / srs.shape[0]
 
 
@@ -32,6 +36,9 @@ def uniqueness(srs):
     Returns:
         float
     '''
+    if srs[srs.notnull()].empty:
+        return 0.0
+
     u_scr = float(srs.nunique()) / srs.count()
     if u_scr == 1:
         print '{} is perfectly unique and covers {} of rows'.format(srs.name, float(srs.notnull().sum()) / srs.shape[0])
@@ -47,6 +54,9 @@ def longest_member(srs):
     Returns:
         float
     '''
+    if srs[srs.notnull()].empty:
+        return 0.0
+
     max_len = 0
     for each in srs:
         if len(str(each)) > max_len:
@@ -64,6 +74,9 @@ def get_combos(lst):
         list -- List of combinations
     """
     combos = []
+    if len(lst) > 10:
+        warn('Suggest keep the number of fields below 10, this one is {}'.format(len(lst)))
+
     for each in xrange(len(lst)):
         if each > 0:
             combos.extend(combinations(lst, each + 1))
@@ -71,7 +84,18 @@ def get_combos(lst):
 
 
 def mash(dframe, flds=None, keep_zeros=False):
-    '''Returns df of non-null and non-zero on flds'''
+    """Returns df of non-null and non-zero on flds
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe
+
+    Keyword Arguments:
+        flds {list} -- List of column nmaes (default: {None})
+        keep_zeros {bool} -- True will keep zeros. (default: {False})
+
+    Returns:
+        pandas.DataFrame -- Dataframe with rows removed if null or zero on column[flds].
+    """
     flds = [flds] if isinstance(flds, str) else flds
     df_work = dframe.copy()
     for each in flds:
@@ -83,14 +107,31 @@ def mash(dframe, flds=None, keep_zeros=False):
 
 
 def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False, prefix=''):
-    '''Attach an column with ID created from field_list and optionally add uuid'''
+    """Attach an column with ID created from field_list and optionally add uuid
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe.
+
+    Keyword Arguments:
+        field_list {list} -- List of columns to use to build tempid. (default: {None})
+        append_uuid {bool} -- True appends uuid. (default: {False})
+
+    Returns:
+        pandas.DataFrame -- Dataframe with tempid using flds.
+    """
     df_work = dframe.copy()
     df_work['_prefix_'] = prefix.strip()
     df_work['_uuid_'] = ''
 
+    if len(field_list) == 0:
+        warn('No fields supplied.')
+        return pd.DataFrame()
+
     if len(field_list) > 1:
+        df_work[field_list] = df_work[field_list].applymap(str)
         flds_x = [df_work[x].tolist() for x in field_list[1:]]
-        df_work['_work_'] = df_work[field_list[0]].str.cat(flds_x, sep='_', na_rep='nan')
+        df_work['_work_'] = df_work[field_list[0]].str.cat(
+            flds_x, sep='_', na_rep='nan')
     else:
         flds_x = field_list
         df_work['_work_'] = df_work[field_list]
@@ -104,7 +145,12 @@ def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False
     df_work['_work_'] = df_work['_work_'].apply(make_good_label).str.upper()
     df_work = df_work.drop(['_prefix_', '_uuid_'], axis=1)
     df_work = df_work.rename(columns={'_work_': id_label})
-    return df_work
+
+    df_result = dframe.copy()
+    df_result = pd.merge(
+        df_result, df_work[[id_label]], left_index=True, right_index=True)
+
+    return df_result
 
 
 def make_good_label(x_value):
@@ -120,7 +166,14 @@ def make_good_label(x_value):
 
 
 def rate_series(dframe):
-    '''return ratings of fields for completeness and uniqueness'''
+    """return ratings of fields for completeness and uniqueness
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe.
+
+    Returns:
+        pandas.DataFrame -- Dataframe with statistics regarding the quality of columns as identifiers.
+    """
     df_work = pd.DataFrame({'fld': dframe.columns.tolist()}, )
     df_work['obj_type'] = df_work.fld.apply(lambda x: dframe[x].dtype)
     df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe[x].dtype.kind)
@@ -132,7 +185,14 @@ def rate_series(dframe):
 
 
 def get_sorted_fields(dframe):
-    '''return lists of fields sorted by most_complete, most_unique, and non_object'''
+    """return lists of fields sorted by most_complete, most_unique, and non_object
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe.
+
+    Returns:
+        dict -- Dictionary of lists with fields sorted by completeness and uniqueness. Also a list for fields with are non_object, which are not ranked for completeness or uniqueness.
+    """
     df_work = rate_series(dframe)
     fltr_om = df_work['obj_kind'].isin(['O', 'M'])
     flds_srt_completeness = df_work[fltr_om].sort_values(
@@ -144,7 +204,20 @@ def get_sorted_fields(dframe):
 
 
 def get_unique_fields(dframe, candidate_flds, threshold=1.0, max_member_length=30, show_all=False):
-    '''returns list of fields that combine to create an id that has uniqueness >= threshold'''
+    """Return list of fields that combine to create an ID that has uniqueness >= threshold.
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe.
+        candidate_flds {list} -- List of column names.
+
+    Keyword Arguments:
+        threshold {float} -- Uniqueness threshold where 1 is perfectly unique (default: {1})
+        max_member_length {int} -- Used to filter out columns which have members that are too lengthy. (default: {30})
+        show_all {bool} -- Show all results even if uniqueness does not meet threshold. (default: {False})
+
+    Returns:
+        list -- List of column names that combine to create a unique ID.
+    """
     summary = []
     flds_work = [x for x in candidate_flds if longest_member(dframe[x]) <= max_member_length]
     for each in get_combos(flds_work):
@@ -186,7 +259,18 @@ def attach_unique_id(dframe, threshold=0.5):
 
 
 def coveredness(srs_l, srs_r):
-    '''returns percentage of srs_l members that can be covered by srs_r members'''
+    """Returns percentage of srs_l members that can be found in srs_r
+
+    Arguments:
+        srs_l {pandas.Series} -- Source series.
+        srs_r {pandas.Series} -- Target series.
+
+    Returns:
+        float -- Percentage of srs_l members that can be found in srs_r
+    """
+    if srs_l.empty or srs_r.empty:
+        warn('One of the series used is empty.')
+        return 0.0
     return float(srs_l.isin(srs_r).sum()) / srs_l.shape[0]
 
 
@@ -204,14 +288,33 @@ def oneness(srs_l, srs_r):
 
 
 def has_name_match(srs_l, dframe_r):
-    '''Returns True if srs_l name found in dframe_r'''
+    """Returns True if srs_l name found in dframe_r
+
+    Arguments:
+        srs_l {pandas.Series} -- Source series.
+        dframe_r {pandas.DataFrame} -- Dataframe to search.
+
+    Returns:
+        bool -- True if srs_l.name is found in dframe_r.columns.
+    """
     if srs_l.name in dframe_r.columns:
         return True
     return False
 
 
 def get_most_coveredness(srs_l, dframe_r, top_limit=3):
-    '''Returns top most series in dframe_r which covers srs_l'''
+    """Returns columns that most cover source series
+
+    Arguments:
+        srs_l {pandas.Series} -- Input series.
+        dframe_r {pandas.DataFrame} -- Target dataframe to search.
+
+    Keyword Arguments:
+        top_limit {int} -- Maximum number of column names (default: {3})
+
+    Returns:
+        list -- List of columns from dframe_r that most cover srs_l.
+    """
     res = []
     for each in dframe_r:
         if srs_l.dtype == dframe_r[each].dtype:
@@ -223,7 +326,15 @@ def get_most_coveredness(srs_l, dframe_r, top_limit=3):
 
 
 def check_coveredness(dframe_l, dframe_r):
-    '''return ratings of fields for coveredness'''
+    """Returns ratings of coveredness for columns in dframe_l
+
+    Arguments:
+        dframe_l {pandas.DataFrame} -- Source dataframe.
+        dframe_r {pandas.DataFrame} -- Target dataframe.
+
+    Returns:
+        pandas.DataFrame -- Dataframe showing statistics regard each columns coveredness.
+    """
     df_work = pd.DataFrame({'fld': dframe_l.columns.tolist()}, )
     df_work['obj_type'] = df_work.fld.apply(lambda x: dframe_l[x].dtype)
     df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe_l[x].dtype.kind)
@@ -237,7 +348,20 @@ def check_coveredness(dframe_l, dframe_r):
 
 
 def suggest_id_pairs(dframe_l, dframe_r, threshold=0.5, incl_all_dtypes=False, incl_all_pairs=False):
-    '''Suggest matching series from two dfs'''
+    """Suggest matching series from two dfs.
+
+    Arguments:
+        dframe_l {pandas.DataFrame} -- Left dataframe.
+        dframe_r {pandas.DataFrame} -- Right dataframe.
+
+    Keyword Arguments:
+        threshold {float} -- Value between 0 and 1 that represents minimum coveredness. (default: {0.5})
+        incl_all_dtypes {bool} -- Try to use all dtypes (not just object) if True. (default: {False})
+        incl_all_pairs {bool} -- Show all pairs regardless of threshold. (default: {False})
+
+    Returns:
+        pandas.DataFrame -- Statistics regarding which pairs of columns to use as IDs and their score (id_scr).
+    """
     flds_l = dframe_l.columns.tolist()
     flds_r = dframe_r.columns.tolist()
     pairs = []
@@ -264,7 +388,17 @@ def suggest_id_pairs(dframe_l, dframe_r, threshold=0.5, incl_all_dtypes=False, i
 
 
 def cum_uniq(dframe, flds=None):
-    '''Return list of uniqueness as tempid is created based on flds'''
+    """Return list of incremental uniqueness as tempid is created based on flds.
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Source dataframe.
+
+    Keyword Arguments:
+        flds {list} -- List of columnn names to be used for create tempid. (default: {None})
+
+    Returns:
+        list -- List of floats representing incremental addition to uniqueness as more columns are used to create a tempid.
+    """
     flds_work = [f for f in flds if f in dframe.columns]
     u_res = []
 
@@ -274,14 +408,30 @@ def cum_uniq(dframe, flds=None):
     return u_res
 
 
-def best_id_pair(dframe_l, dframe_r):
-    '''Return df showing which IDs are best for matching two dfs'''
-    df_work = suggest_id_pairs(dframe_l, dframe_r)
+def best_id_pair(dframe_l, dframe_r, threshold=0.5):
+    """Return df showing which IDs are best for matching two dfs.
+
+    Arguments:
+        dframe_l {pandas.DataFrame} -- Left dataframe.
+        dframe_r {pandas.DataFrame} -- Right dataframe.
+
+    Keyword Arguments:
+        threshold {float} -- Value between 0 and 1 that represents minimum coveredness (default: {0.5})
+
+    Returns:
+        pandas.DataFrame -- Dataframe showing best IDs to use to align source dataframes.
+    """
+    df_work = suggest_id_pairs(dframe_l, dframe_r, threshold=threshold)
     df_work['cum_uniq_l'] = cum_uniq(dframe_l, flds=df_work['fld_l'].tolist())
     df_work['cum_uniq_r'] = cum_uniq(dframe_r, flds=df_work['fld_r'].tolist())
     df_work['cum_uniq_l_increment'] = df_work['cum_uniq_l'] - df_work['cum_uniq_l'].shift()
     df_work['cum_uniq_r_increment'] = df_work['cum_uniq_r'] - df_work['cum_uniq_r'].shift()
-    return df_work[~((df_work['cum_uniq_l_increment'] == 0) & (df_work['cum_uniq_r_increment'] == 0))]
+    df_result = df_work[~((df_work['cum_uniq_l_increment'] == 0) & (df_work['cum_uniq_r_increment'] == 0))]
+
+    if df_result.empty:
+        warn('Could not find a good id to use for aligning dataframes.')
+        return pd.DataFrame()
+    return df_result
 
 
 def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
@@ -299,7 +449,16 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
     Returns:
         dataframe -- shows results of the comparison
     """
+    if dframe_l.empty or dframe_r.empty:
+        warn('One or both source dataframes are empty.')
+        return pd.DataFrame()
+
     df_best = best_id_pair(dframe_l, dframe_r)
+
+    if df_best.empty:
+        warn('Returning empty dataframe.')
+        return pd.DataFrame()
+
     print 'Diags:'
     display(df_best)
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
