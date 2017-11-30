@@ -1,13 +1,13 @@
 '''ashpool tests'''
 import datetime
+import string
 
 import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import example, given
-from hypothesis.strategies import text
-from hypothesis.extra.pandas import column, data_frames
-
+from hypothesis.extra.pandas import column, data_frames, indexes, series
+from hypothesis.strategies import datetimes, lists, sampled_from, text
 
 from ..ashpool import *
 
@@ -45,6 +45,9 @@ df_r = pd.DataFrame({'dt_1': {0: datetime.datetime(2017, 9, 29, 00, 00, 00),
                      'str_2': {0: 'BC', 1: 'BC', 2: 'BC', 3: 'FG', 4: 'FG', 5: 'FG'},
                      'str_3': {0: 'u', 1: 'y', 2: 'x', 3: 'w', 4: 'v', 5: np.nan},
                      'int_2': {0: 1, 1: 2, 2: 3, 3: 1, 4: 2, 5: 3}})
+lst_text = lists(elements=text(alphabet=list(string.printable),
+                          min_size=4, max_size=10), min_size=1).example()
+
 
 @given(text(min_size=3))
 @example(' BAD label ')
@@ -54,9 +57,14 @@ def test_make_good_label(s):
     assert make_good_label(' BAD label ') == 'bad_label'
 
 
-def test_completeness():
-    # assert completeness(df_l['flt_1']) == 0.8
+@given(series(dtype=str))
+@example(series(dtype=int).example())
+@example(series(dtype=float).example())
+@example(series(dtype=bool).example())
+@example(series(dtype=unicode).example())
+def test_completeness(srs_t):
     assert np.isclose(completeness(df_l['flt_1']), 0.833333)
+    assert isinstance(completeness(srs_t), float)
 
 def test_mash():
     df_result = mash(df_l, 'flt_1')
@@ -66,26 +74,43 @@ def test_mash():
     df_result = mash(df_l, 'int_1', keep_zeros=True)
     assert df_result.shape[0] == 6
 
-def test_uniqueness():
+
+@given(series(dtype=str))
+@example(series(dtype=int).example())
+@example(series(dtype=float).example())
+@example(series(dtype=bool).example())
+@example(series(dtype=unicode).example())
+def test_uniqueness(srs_t):
     assert np.isclose(uniqueness(df_l['str_1']), 0.166666)
     assert np.isclose(uniqueness(df_l['str_2']), 0.333333)
+    assert isinstance(uniqueness(srs_t), float)
 
-def test_coveredness():
+
+@given(series(dtype=str), series(dtype=str))
+@example(series(dtype=int).example(), series(dtype=int).example())
+@example(series(dtype=float).example(), series(dtype=float).example())
+@example(series(dtype=bool).example(), series(dtype=bool).example())
+@example(series(dtype=unicode).example(), series(dtype=unicode).example())
+def test_coveredness(srs_t, srs_u):
     assert np.isclose(coveredness(df_l['int_1'], df_l['int_2']), 0.333333)
+    assert isinstance(coveredness(srs_t, srs_u), float)
 
-def test_get_combos():
+
+@given(lists(text(), max_size=11))
+def test_get_combos(srs_t):
     assert len(get_combos(df_l['str_2'])) == 13
+    assert isinstance(get_combos(srs_t), list)
 
 def test_attach_temp_id():
     assert attach_temp_id(df_l, field_list=['str_1', 'str_2'])['tempid'].tolist() == ['A_BC', 'A_BC', 'A_BC', 'A_DE', 'A_DE', 'A_DE']
-    assert attach_temp_id(df_l, field_list=['str_1', 'dt_1'])
+    assert isinstance(attach_temp_id(df_l, field_list=['str_1', 'dt_1']), pd.DataFrame)
 
 def test_rate_series():
     df_result = rate_series(df_l)
     assert df_result['fld'].tolist() == df_l.columns.tolist()
 
 
-@given(data_frames([column('int_1', dtype=int), column('int_2', dtype=int), column('int_3', dtype=int), column('flt_1', dtype=float), column('flt_2', dtype=float)]))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('int_2', dtype=int), column('int_3', dtype=int), column('flt_1', dtype=float), column('flt_2', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)))
 def test_rate_series_2(df_l):
     df_result = rate_series(df_l)
     assert df_result['fld'].tolist() == df_l.columns.tolist()
@@ -112,10 +137,13 @@ def test_jaccard_similarity():
 def test_has_name_match():
     assert isinstance(has_name_match(df_l['str_1'], df_r), bool)
 
-def test_suggest_id_pairs():
+
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)))
+def test_suggest_id_pairs(df_t, df_u):
     df_result = suggest_id_pairs(df_l, df_r)
     assert isinstance(df_result, pd.DataFrame)
     assert 'id_scr' in df_result.columns
+    assert isinstance(suggest_id_pairs(df_t,df_u), pd.DataFrame)
 
 def test_get_most_coveredness():
     assert isinstance(get_most_coveredness(df_l['dt_1'], df_r), list)
@@ -128,11 +156,17 @@ def test_check_coveredness():
 def test_cum_uniq():
     assert isinstance(cum_uniq(df_l, df_l.columns.tolist()), list)
 
-def test_best_id_pair():
-    assert isinstance(best_id_pair(df_l, df_r), pd.DataFrame)
 
-def test_reconcile():
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)))
+def test_best_id_pair(df_t, df_u):
+    assert isinstance(best_id_pair(df_l, df_r), pd.DataFrame)
+    assert isinstance(best_id_pair(df_t, df_u, threshold=0.01), pd.DataFrame)
+
+
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=str), column('int_1', dtype=int), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=int, min_size=1)))
+def test_reconcile(df_t, df_u):
     df_result = reconcile(df_l, df_r, fields_l=['flt_1'], fields_r=['flt_1'])
     assert isinstance(df_result, pd.DataFrame)
     assert 'compid' in df_result.columns
     assert 'found' in df_result.columns
+    assert isinstance(reconcile(df_t, df_u, fields_l=['flt_1'], fields_r=['flt_1']), pd.DataFrame)

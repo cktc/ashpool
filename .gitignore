@@ -6,3 +6,5 @@
 \.cache/
 
 \.pylintrc
+
+ashpool/tests/__pycache__/
