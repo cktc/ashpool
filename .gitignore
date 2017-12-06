@@ -1,10 +1,9 @@
-
+*.pyc
 \.pypirc
-
 \.idea/
-
 \.cache/
-
 \.pylintrc
-
+ashpool/.hypothesis/**
 ashpool/tests/__pycache__/
+\.hypothesis/
+
