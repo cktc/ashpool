@@ -1,8 +1,7 @@
 '''Ashpool'''
-
 import string
 import uuid
-from itertools import chain, combinations
+from itertools import chain, combinations, repeat
 from operator import itemgetter
 from warnings import warn
 
@@ -11,6 +10,58 @@ import pandas as pd
 from IPython.core.display import display
 
 trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
+
+
+def make_good_label(x_value):
+    """Return something that is a better label.
+
+    Arguments:
+        x_value {string} -- or something that can be converted to a string
+    """
+    # trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
+    if isinstance(x_value, unicode):
+        x_value = x_value.encode('ascii', 'ignore')
+    return '_'.join(str(x_value).translate(trantbl).split()).lower()
+
+
+def mash(dframe, flds=None, keep_zeros=False):
+    """Returns df of non-null and non-zero on flds
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe
+
+    Keyword Arguments:
+        flds {list} -- List of column nmaes (default: {None})
+        keep_zeros {bool} -- True will keep zeros. (default: {False})
+
+    Returns:
+        pandas.DataFrame -- Dataframe with rows removed if null or zero on column[flds].
+    """
+    flds = [flds] if isinstance(flds, str) else flds
+    df_work = dframe.copy()
+    for each in flds:
+        assert each in df_work.columns, '"{}" is not in df'.format(each)
+        df_work = df_work[df_work[each].notnull()]
+        if keep_zeros is False:
+            df_work = df_work[df_work[each] != 0]
+    return df_work
+
+
+def flatten_on(dframe, flatten=[], agg_ovr={}):
+    '''return dataframe groupby all non_num fields except those listed in flatten list'''
+    df_work = dframe.copy()
+    df_dtypes = get_dtypes(df_work)
+    fltr_non_num = df_dtypes[~df_dtypes['obj_kind'].isin(
+        ['f', 'i'])]['fld'].tolist()
+    fltr = [x.encode('UTF8') for x in fltr_non_num]
+    fltr_num = df_dtypes[~df_dtypes['fld'].isin(fltr_non_num)]['fld'].tolist()
+    for each in flatten:
+        fltr.remove(each)
+    agg_dict = dict(zip(fltr_num, repeat(sum)))
+    agg_dict.update(agg_ovr)
+    df_return = df_work.groupby(fltr).agg(agg_dict).reset_index()
+    return df_return
+
 
 def completeness(srs):
     """Return completeness score for series - i.e., the percentage of non-null values in a series.
@@ -83,27 +134,51 @@ def get_combos(lst):
     return list(set(combos))
 
 
-def mash(dframe, flds=None, keep_zeros=False):
-    """Returns df of non-null and non-zero on flds
+
+def get_dtypes(dframe):
+    '''return dtypes and kinds by column names (fld)'''
+    df_work = pd.DataFrame({'fld': dframe.columns.tolist()}, )
+    df_work['obj_type'] = df_work.fld.apply(lambda x: dframe[x].dtype)
+    df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe[x].dtype.kind)
+    return df_work
+
+
+def rate_series(dframe):
+    """return ratings of fields for completeness and uniqueness
 
     Arguments:
-        dframe {pandas.DataFrame} -- Input dataframe
-
-    Keyword Arguments:
-        flds {list} -- List of column nmaes (default: {None})
-        keep_zeros {bool} -- True will keep zeros. (default: {False})
+        dframe {pandas.DataFrame} -- Input dataframe.
 
     Returns:
-        pandas.DataFrame -- Dataframe with rows removed if null or zero on column[flds].
+        pandas.DataFrame -- Dataframe with statistics regarding the quality of columns as identifiers.
     """
-    flds = [flds] if isinstance(flds, str) else flds
-    df_work = dframe.copy()
-    for each in flds:
-        assert each in df_work.columns, '"{}" is not in df'.format(each)
-        df_work = df_work[df_work[each].notnull()]
-        if keep_zeros is False:
-            df_work = df_work[df_work[each] != 0]
+    df_work = pd.DataFrame({'fld': dframe.columns.tolist()}, )
+    df_work['obj_type'] = df_work.fld.apply(lambda x: dframe[x].dtype)
+    df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe[x].dtype.kind)
+    df_work['completeness'] = df_work['fld'].apply(lambda x: completeness(dframe[x]))
+    df_work['uniqueness'] = df_work['fld'].apply(lambda x: uniqueness(dframe[x]))
+    df_work['longest_member'] = df_work['fld'].apply(lambda x: longest_member(dframe[x]))
+    df_work.sort_values(['obj_type', 'completeness', 'uniqueness'], ascending=[False, False, False])
     return df_work
+
+
+def get_sorted_fields(dframe):
+    """return lists of fields sorted by most_complete, most_unique, and non_object
+
+    Arguments:
+        dframe {pandas.DataFrame} -- Input dataframe.
+
+    Returns:
+        dict -- Dictionary of lists with fields sorted by completeness and uniqueness. Also a list for fields with are non_object, which are not ranked for completeness or uniqueness.
+    """
+    df_work = rate_series(dframe)
+    fltr_om = df_work['obj_kind'].isin(['O', 'M'])
+    flds_srt_completeness = df_work[fltr_om].sort_values(
+        ['completeness', 'longest_member'], ascending=[False, True])['fld'].tolist()
+    flds_srt_uniqueness = df_work[fltr_om].sort_values(
+        ['uniqueness', 'completeness', 'longest_member'], ascending=[False, False, True])['fld'].tolist()
+    flds_non_object = df_work[~fltr_om]['fld'].tolist()
+    return {'most_complete': flds_srt_completeness, 'most_unique': flds_srt_uniqueness, 'non_object': flds_non_object}
 
 
 def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False, prefix=''):
@@ -151,56 +226,6 @@ def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False
         df_result, df_work[[id_label]], left_index=True, right_index=True)
 
     return df_result
-
-
-def make_good_label(x_value):
-    """Return something that is a better label.
-
-    Arguments:
-        x_value {string} -- or something that can be converted to a string
-    """
-    # trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
-    if isinstance(x_value, unicode):
-        x_value = x_value.encode('ascii', 'ignore')
-    return '_'.join(str(x_value).translate(trantbl).split()).lower()
-
-
-def rate_series(dframe):
-    """return ratings of fields for completeness and uniqueness
-
-    Arguments:
-        dframe {pandas.DataFrame} -- Input dataframe.
-
-    Returns:
-        pandas.DataFrame -- Dataframe with statistics regarding the quality of columns as identifiers.
-    """
-    df_work = pd.DataFrame({'fld': dframe.columns.tolist()}, )
-    df_work['obj_type'] = df_work.fld.apply(lambda x: dframe[x].dtype)
-    df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe[x].dtype.kind)
-    df_work['completeness'] = df_work['fld'].apply(lambda x: completeness(dframe[x]))
-    df_work['uniqueness'] = df_work['fld'].apply(lambda x: uniqueness(dframe[x]))
-    df_work['longest_member'] = df_work['fld'].apply(lambda x: longest_member(dframe[x]))
-    df_work.sort_values(['obj_type', 'completeness', 'uniqueness'], ascending=[False, False, False])
-    return df_work
-
-
-def get_sorted_fields(dframe):
-    """return lists of fields sorted by most_complete, most_unique, and non_object
-
-    Arguments:
-        dframe {pandas.DataFrame} -- Input dataframe.
-
-    Returns:
-        dict -- Dictionary of lists with fields sorted by completeness and uniqueness. Also a list for fields with are non_object, which are not ranked for completeness or uniqueness.
-    """
-    df_work = rate_series(dframe)
-    fltr_om = df_work['obj_kind'].isin(['O', 'M'])
-    flds_srt_completeness = df_work[fltr_om].sort_values(
-        ['completeness', 'longest_member'], ascending=[False, True])['fld'].tolist()
-    flds_srt_uniqueness = df_work[fltr_om].sort_values(
-        ['uniqueness', 'completeness', 'longest_member'], ascending=[False, False, True])['fld'].tolist()
-    flds_non_object = df_work[~fltr_om]['fld'].tolist()
-    return {'most_complete': flds_srt_completeness, 'most_unique': flds_srt_uniqueness, 'non_object': flds_non_object}
 
 
 def get_unique_fields(dframe, candidate_flds, threshold=1.0, max_member_length=30, show_all=False):
@@ -283,8 +308,9 @@ def jaccard_similarity(srs_l, srs_r):
 
 def oneness(srs_l, srs_r):
     '''TODO'''
-    print len(dict(zip(srs_l.tolist(), srs_r.tolist())))
-    print len(dict(zip(srs_r.tolist(), srs_l.tolist())))
+    map_len_l = len(dict(zip(srs_l.tolist(), srs_r.tolist())))
+    map_len_r = len(dict(zip(srs_r.tolist(), srs_l.tolist())))
+    return min(map_len_l, map_len_r) / max(map_len_l, map_len_r)
 
 
 def has_name_match(srs_l, dframe_r):
@@ -482,8 +508,7 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             final_fields.append(each)
 
     ordered_fields = list(chain(*final_fields))
-    df_out = pd.merge(df_l[['compid'] + fields_l], df_r[['compid'] + fields_r], how='outer',
-                      left_on='compid', right_on='compid', suffixes=['_l', '_r'], indicator='found')
+    df_out = pd.merge(df_l[['compid'] + fields_l], df_r[['compid'] + fields_r], how='outer', left_on='compid', right_on='compid', suffixes=['_l', '_r'], indicator='found')
     df_out = df_out[['compid', 'found'] + ordered_fields]
 
     # Do comparison
