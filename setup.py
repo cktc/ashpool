@@ -11,9 +11,9 @@ setup(name='ashpool',
       url='http://github.com/cktc/ashpool',
       author='Christopher Cheung',
       author_email='chris.kt.cheung@gmail.com',
-      #   license='MIT',
+      license='MIT',
       packages=['ashpool'],
       install_requires=[
-          'pandas',
+          'pandas', 'numpy'
       ],
       zip_safe=False)

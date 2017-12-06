@@ -7,3 +7,5 @@ ashpool/.hypothesis/**
 ashpool/tests/__pycache__/
 \.hypothesis/
 
+
+\.vscode/
