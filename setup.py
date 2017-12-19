@@ -7,7 +7,7 @@ def readme():
 
 setup(name='ashpool',
       version='0.1',
-      description='Compare dataframes.',
+      description='A library to compare dataframes.',
       url='http://github.com/cktc/ashpool',
       author='Christopher Cheung',
       author_email='chris.kt.cheung@gmail.com',

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from IPython.core.display import display
 
-trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
+TRAN_TBL = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 
 def make_good_label(x_value):
@@ -18,10 +18,9 @@ def make_good_label(x_value):
     Arguments:
         x_value {string} -- or something that can be converted to a string
     """
-    # trantbl = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
     if isinstance(x_value, unicode):
         x_value = x_value.encode('ascii', 'ignore')
-    return '_'.join(str(x_value).translate(trantbl).split()).lower()
+    return '_'.join(str(x_value).translate(TRAN_TBL).split()).lower()
 
 
 def mash(dframe, flds=None, keep_zeros=False):
@@ -48,7 +47,14 @@ def mash(dframe, flds=None, keep_zeros=False):
 
 
 def flatten_on(dframe, flatten=[], agg_ovr={}):
-    '''return dataframe groupby all non_num fields except those listed in flatten list'''
+    """Returns dataframe groupby all non_num fields except those listed in flatten list
+
+    Arguments:
+        dframe {pandas.DataFrame} -- input dataframe
+
+    Returns:
+        pandas.DataFrame -- same as source dataframe but flattened (i.e., categories removed and data aggregated over other non-numeric columns)
+    """
     df_work = dframe.copy()
     df_dtypes = get_dtypes(df_work)
     fltr_non_num = df_dtypes[~df_dtypes['obj_kind'].isin(
