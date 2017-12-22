@@ -102,7 +102,7 @@ dframe_r {pandas.DataFrame} – Target dataframe.</dd>
 <dl class="function">
 <dt id="ashpool.completeness">
 <code class="descclassname">ashpool.</code><code class="descname">completeness</code><span class="sig-paren">(</span><em>srs</em><span class="sig-paren">)</span><a class="headerlink" href="#ashpool.completeness" title="Permalink to this definition">¶</a></dt>
-<dd><p>return completeness score for series - i.e., the percentage of non-null values in a series.</p>
+<dd><p>Return completeness score for series - i.e., the percentage of non-null values in a series.</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
 <dd>srs {pandas.Series}</dd>
@@ -145,6 +145,18 @@ srs_r {pandas.Series} – Target series.</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="ashpool.flatten_on">
+<code class="descclassname">ashpool.</code><code class="descname">flatten_on</code><span class="sig-paren">(</span><em>dframe</em>, <em>flatten=[]</em>, <em>agg_ovr={}</em><span class="sig-paren">)</span><a class="headerlink" href="#ashpool.flatten_on" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns dataframe groupby all non_num fields except those listed in flatten list</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>dframe {pandas.DataFrame} – input dataframe</dd>
+<dt>Returns:</dt>
+<dd>pandas.DataFrame – same as source dataframe but flattened (i.e., categories removed and data aggregated over other non-numeric columns)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="ashpool.get_combos">
 <code class="descclassname">ashpool.</code><code class="descname">get_combos</code><span class="sig-paren">(</span><em>lst</em><span class="sig-paren">)</span><a class="headerlink" href="#ashpool.get_combos" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns list of combinations of members of list.</p>
@@ -154,6 +166,12 @@ srs_r {pandas.Series} – Target series.</dd>
 <dt>Returns:</dt>
 <dd>list – List of combinations</dd>
 </dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="ashpool.get_dtypes">
+<code class="descclassname">ashpool.</code><code class="descname">get_dtypes</code><span class="sig-paren">(</span><em>dframe</em><span class="sig-paren">)</span><a class="headerlink" href="#ashpool.get_dtypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return dtypes and kinds by column names (fld)</p>
 </dd></dl>
 
 <dl class="function">

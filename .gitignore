@@ -9,3 +9,5 @@ ashpool/tests/__pycache__/
 
 
 \.vscode/
+
+docs/_build/

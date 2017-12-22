@@ -1,0 +1,12 @@
+MANIFEST.in
+README.rst
+setup.py
+ashpool/__init__.py
+ashpool/ashpool.py
+ashpool/dummy.py
+ashpool.egg-info/PKG-INFO
+ashpool.egg-info/SOURCES.txt
+ashpool.egg-info/dependency_links.txt
+ashpool.egg-info/not-zip-safe
+ashpool.egg-info/requires.txt
+ashpool.egg-info/top_level.txt

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Ashpool documentation build configuration file, created by
-# sphinx-quickstart on Fri Nov 24 09:18:01 2017.
+# sphinx-quickstart on Fri Dec 22 17:46:31 2017.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -18,8 +18,8 @@
 #
 import os
 import sys
-sys.path.append('../ashpool')
-# sys.path.insert(0, os.path.abspath('../ashpool'))
+# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../ashpool'))
 
 
 # -- General configuration ------------------------------------------------
@@ -32,7 +32,7 @@ sys.path.append('../ashpool')
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.coverage']
+    'sphinx.ext.githubpages']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
