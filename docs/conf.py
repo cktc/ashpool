@@ -177,5 +177,5 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return MagicMock()
 
-MOCK_MODULES = ['numpy', 'pandas']  
+MOCK_MODULES = ['numpy', 'pandas', 'IPython.core']  
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
