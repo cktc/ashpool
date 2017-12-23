@@ -171,6 +171,8 @@ texinfo_documents = [
 
 # 20171223-220352 Added so that Read the Docs will load C libraries
 from mock import Mock as MagicMock
+import pandas
+import numpy
 
 class Mock(MagicMock):  
     @classmethod
