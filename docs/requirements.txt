@@ -1,1 +1,1 @@
-ashpool>=0.1
+ashpool==0.1
