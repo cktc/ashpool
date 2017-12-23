@@ -173,6 +173,8 @@ texinfo_documents = [
 from mock import Mock as MagicMock
 import pandas
 import numpy
+import ashpool
+from ashpool import *
 
 class Mock(MagicMock):  
     @classmethod
