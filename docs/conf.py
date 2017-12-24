@@ -19,6 +19,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('../ashpool'))
 
@@ -32,7 +33,7 @@ sys.path.insert(0, os.path.abspath('../ashpool'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage',
     'sphinx.ext.githubpages']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -85,7 +86,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+# html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -168,4 +169,17 @@ texinfo_documents = [
 ]
 
 
+# 20171223-220352 Added so that Read the Docs will load C libraries used in dependencies
+from mock import Mock as MagicMock
+import pandas
+import numpy
+import ashpool
+from ashpool import *
 
+class Mock(MagicMock):  
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+
+MOCK_MODULES = ['numpy', 'pandas', 'IPython.core', 'IPython.core.display']  
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
