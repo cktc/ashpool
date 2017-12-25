@@ -54,3 +54,7 @@ Include any essential instructions for:
 - IRC or Slack (if applicable)
 
 ### License
+
+### Status
+[![Build Status](https://travis-ci.org/cktc/ashpool.svg?branch=master)](https://travis-ci.org/cktc/ashpool)
+[![Documentation Status](https://readthedocs.org/projects/ashpool/badge/?version=latest)](http://ashpool.readthedocs.io/en/latest/?badge=latest)
