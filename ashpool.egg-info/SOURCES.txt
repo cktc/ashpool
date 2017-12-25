@@ -1,5 +1,4 @@
 MANIFEST.in
-README.rst
 setup.py
 ashpool/__init__.py
 ashpool/ashpool.py
@@ -10,3 +9,5 @@ ashpool.egg-info/dependency_links.txt
 ashpool.egg-info/not-zip-safe
 ashpool.egg-info/requires.txt
 ashpool.egg-info/top_level.txt
+ashpool/tests/__init__.py
+ashpool/tests/test_ashpool.py

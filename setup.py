@@ -1,13 +1,14 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
-def readme():
-    with open('README.rst') as f:
-        return f.read()
+# def readme():
+#     with open('README.rst') as f:
+#         return f.read()
 
 setup(
     name='ashpool',
-    packages=['ashpool'],
+    # packages=['ashpool'],
+    packages=find_packages(exclude=['docs', 'tests*']),
     description='A library to compare data in dataframes.',
     url='http://github.com/cktc/ashpool',
     version='0.1',
@@ -16,7 +17,7 @@ setup(
     author_email='chris.kt.cheung@gmail.com',
     license='MIT',
     install_requires=[
-        'pandas', 'numpy'
+        'pandas', 'numpy', 'ipython'
     ],
     keywords=['compare pandas dataframes'], # arbitrary keywords
     classifiers=[

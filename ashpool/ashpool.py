@@ -1,3 +1,6 @@
+'''Ashpool - A Comparison Library
+'''
+
 import string
 import uuid
 from itertools import chain, combinations, repeat
