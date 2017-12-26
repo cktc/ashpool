@@ -17,7 +17,7 @@ setup(
     author_email='chris.kt.cheung@gmail.com',
     license='MIT',
     install_requires=[
-        'pandas', 'numpy', 'ipython'
+        'pandas', 'numpy', 'ipython', 'future'
     ],
     keywords=['compare pandas dataframes'], # arbitrary keywords
     classifiers=[

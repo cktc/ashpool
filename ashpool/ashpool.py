@@ -1,8 +1,13 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 '''Ashpool - A Comparison Library
 '''
 
 import string
 import uuid
+from builtins import (ascii, bytes, chr, dict, filter, hex, input, int, map,
+                      next, oct, open, pow, range, round, str, super, zip)
 from itertools import chain, combinations, repeat
 from operator import itemgetter
 from warnings import warn
@@ -10,8 +15,11 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 from IPython.core.display import display
+from past.utils import old_div
 
-TRAN_TBL = string.maketrans(string.punctuation, ' ' * len(string.punctuation))
+
+# print(string.punctuation, type(unicode(string.punctuation,'utf-8')))
+TRAN_TBL = str.maketrans(str(string.punctuation), u' ' * len(string.punctuation))
 
 
 def make_good_label(x_value):
@@ -20,8 +28,8 @@ def make_good_label(x_value):
     Arguments:
         x_value {string} -- or something that can be converted to a string
     """
-    if isinstance(x_value, unicode):
-        x_value = x_value.encode('ascii', 'ignore')
+    # if isinstance(x_value, str):
+    #     x_value = x_value.encode('ascii', 'ignore')
     return '_'.join(str(x_value).translate(TRAN_TBL).split()).lower()
 
 
@@ -65,7 +73,7 @@ def flatten_on(dframe, flatten=[], agg_ovr={}):
     fltr_num = df_dtypes[~df_dtypes['fld'].isin(fltr_non_num)]['fld'].tolist()
     for each in flatten:
         fltr.remove(each)
-    agg_dict = dict(zip(fltr_num, repeat(sum)))
+    agg_dict = dict(list(zip(fltr_num, repeat(sum))))
     agg_dict.update(agg_ovr)
     df_return = df_work.groupby(fltr).agg(agg_dict).reset_index()
     return df_return
@@ -98,9 +106,9 @@ def uniqueness(srs):
     if srs[srs.notnull()].empty:
         return 0.0
 
-    u_scr = float(srs.nunique()) / srs.count()
+    u_scr = old_div(float(srs.nunique()), srs.count())
     if u_scr == 1:
-        print '{} is perfectly unique and covers {} of rows'.format(srs.name, float(srs.notnull().sum()) / srs.shape[0])
+        print('{} is perfectly unique and covers {} of rows'.format(srs.name, old_div(float(srs.notnull().sum()), srs.shape[0])))
     return u_scr
 
 
@@ -136,7 +144,7 @@ def get_combos(lst):
     if len(lst) > 10:
         warn('Suggest keep the number of fields below 10, this one is {}'.format(len(lst)))
 
-    for each in xrange(len(lst)):
+    for each in range(len(lst)):
         if each > 0:
             combos.extend(combinations(lst, each + 1))
     return list(set(combos))
@@ -221,7 +229,7 @@ def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False
 
     if append_uuid:
         df_work['_uuid_'] = pd.Series(
-            ['_' + uuid.uuid4().hex[:3].upper() for x in xrange(len(df_work))])
+            ['_' + uuid.uuid4().hex[:3].upper() for x in range(len(df_work))])
         df_work['_work_'] = df_work['_work_'] + df_work['_uuid_']
     if prefix:
         df_work['_work_'] = df_work['_prefix_'] + '_' + df_work['_work_']
@@ -259,7 +267,7 @@ def get_unique_fields(dframe, candidate_flds, threshold=1.0, max_member_length=3
         u_scr = uniqueness(df_temp['tempid'])
         summary.append((str(each), u_scr))
         if u_scr >= threshold:
-            print 'Uniqueness: {}'.format(u_scr)
+            print('Uniqueness: {}'.format(u_scr))
             display(df_temp.head())
             if not show_all:
                 return list(each)
@@ -285,7 +293,7 @@ def attach_unique_id(dframe, threshold=0.5):
     """
     flds = get_sorted_fields(dframe)
     u_flds = get_unique_fields(dframe, candidate_flds=flds['most_unique'], threshold=threshold)
-    print '!!!u_flds:', u_flds
+    print('!!!u_flds:', u_flds)
     assert u_flds, 'Did not get valid unique fields'
     df_work = attach_temp_id(dframe, field_list=u_flds, id_label='u_id')
     return df_work[['u_id'] + flds['most_unique'] + sorted(flds['non_object'])]
@@ -304,21 +312,21 @@ def coveredness(srs_l, srs_r):
     if srs_l.empty or srs_r.empty:
         warn('One of the series used is empty.')
         return 0.0
-    return float(srs_l.isin(srs_r).sum()) / srs_l.shape[0]
+    return old_div(float(srs_l.isin(srs_r).sum()), srs_l.shape[0])
 
 
 def jaccard_similarity(srs_l, srs_r):
     """Returns the jaccard similarity between two lists"""
     intersection_card = len(set.intersection(*[set(srs_l), set(srs_r)]))
     union_card = len(set.union(*[set(srs_l), set(srs_r)]))
-    return intersection_card / float(union_card)
+    return old_div(intersection_card, float(union_card))
 
 
 def oneness(srs_l, srs_r):
     '''TODO'''
-    map_len_l = len(dict(zip(srs_l.tolist(), srs_r.tolist())))
-    map_len_r = len(dict(zip(srs_r.tolist(), srs_l.tolist())))
-    return min(map_len_l, map_len_r) / max(map_len_l, map_len_r)
+    map_len_l = len(dict(list(zip(srs_l.tolist(), srs_r.tolist()))))
+    map_len_r = len(dict(list(zip(srs_r.tolist(), srs_l.tolist()))))
+    return old_div(min(map_len_l, map_len_r), max(map_len_l, map_len_r))
 
 
 def has_name_match(srs_l, dframe_r):
@@ -436,7 +444,7 @@ def cum_uniq(dframe, flds=None):
     flds_work = [f for f in flds if f in dframe.columns]
     u_res = []
 
-    for each in xrange(len(flds_work)):
+    for each in range(len(flds_work)):
         df_temp = attach_temp_id(dframe, field_list=flds_work[:each + 1])
         u_res.append(uniqueness(df_temp['tempid']))
     return u_res
@@ -493,7 +501,7 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
         warn('Returning empty dataframe.')
         return pd.DataFrame()
 
-    print 'Diags:'
+    print('Diags:')
     display(df_best)
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
     df_temp_r = attach_temp_id(dframe_r, field_list=df_best['fld_r'].tolist())
@@ -506,7 +514,7 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
 
     df_l = dframe_l.rename(columns={left_on: 'compid'}).copy()
     df_r = dframe_r.rename(columns={right_on: 'compid'}).copy()
-    fields = zip(fields_l, fields_r)
+    fields = list(zip(fields_l, fields_r))
 
     final_fields = []
     for each in fields:
@@ -528,10 +536,10 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
                 df_out[each[0]], df_out[each[1]], rtol=0.000000001, atol=0.0001)
             vs_fields.append(lbl)
         except:
-            print 'Cannot compare:', lbl
-            print each[0], type(each[0]), each[1], type(each[1])
+            print('Cannot compare:', lbl)
+            print(each[0], type(each[0]), each[1], type(each[1]))
 
-    df_out['vs_pct'] = sum([df_out[each] for each in vs_fields]) / len(fields)
+    df_out['vs_pct'] = old_div(sum([df_out[each] for each in vs_fields]), len(fields))
 
     # Calc diffs
     if gen_diffs:
@@ -540,10 +548,10 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             lbl2 = each[0] + ' / ' + each[1]
             try:
                 df_out[lbl] = df_out[each[0]] - df_out[each[1]]
-                df_out[lbl2] = df_out[each[0]] / df_out[each[1]]
+                df_out[lbl2] = old_div(df_out[each[0]], df_out[each[1]])
             except:
-                print 'Cannot calc diff:', lbl, lbl2
-                print each[0], type(each[0]), each[1], type(each[1])
+                print('Cannot calc diff:', lbl, lbl2)
+                print(each[0], type(each[0]), each[1], type(each[1]))
 
     # Check if need to return data
     if not return_data:

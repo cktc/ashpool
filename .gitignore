@@ -1,5 +1,6 @@
 .eggs/
 .tox/
+*.bak
 *.pyc
 \.cache/
 \.hypothesis/
@@ -8,6 +9,8 @@
 \.pypirc
 \.vscode/
 ashpool/.hypothesis/**
+ashpool/ashpool.py.bak
 ashpool/tests/__pycache__/
 build/
 docs/_build/
+ipynb/\.ipynb_checkpoints/

@@ -5,3 +5,4 @@ hypothesis>=3.0
 numpy>=1.0
 ipython>=5.5.0
 mock>=2.0.0
+future
