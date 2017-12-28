@@ -1,1 +1,2 @@
 '''Ashpool'''
+from .ashpool import *

@@ -9,7 +9,7 @@ setup(
     name='ashpool',
     # packages=['ashpool'],
     packages=find_packages(exclude=['docs', 'tests*']),
-    description='A library to compare data in dataframes.',
+    description='A quick and easy way to reconcile two data series.',
     url='http://github.com/cktc/ashpool',
     version='0.2.0',
     download_url='http://github.com/cktc/ashpool/archive/v0.2.0.tar.gz',

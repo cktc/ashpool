@@ -1,12 +1,12 @@
 Metadata-Version: 1.1
 Name: ashpool
-Version: 0.1
+Version: 0.2.0
 Summary: A library to compare data in dataframes.
 Home-page: http://github.com/cktc/ashpool
 Author: Christopher Cheung
 Author-email: chris.kt.cheung@gmail.com
 License: MIT
-Download-URL: http://github.com/cktc/ashpool/archive/0.1.tar.gz
+Download-URL: http://github.com/cktc/ashpool/archive/v0.2.0.tar.gz
 Description-Content-Type: UNKNOWN
 Description: UNKNOWN
 Keywords: compare pandas dataframes
