@@ -17,6 +17,7 @@ import pandas as pd
 from IPython.core.display import display
 from past.utils import old_div
 
+import editdistance
 
 # print(string.punctuation, type(unicode(string.punctuation,'utf-8')))
 TRAN_TBL = str.maketrans(str(string.punctuation), u' ' * len(string.punctuation))
@@ -313,6 +314,22 @@ def coveredness(srs_l, srs_r):
         warn('One of the series used is empty.')
         return 0.0
     return old_div(float(srs_l.isin(srs_r).sum()), srs_l.shape[0])
+
+
+def leven_dist(x, y):
+    """Returns Levenshtein distance for two strings and a null if not valid strings.
+    
+    Arguments:
+        x {str} -- First string.
+        y {str} -- Second string.
+    
+    Returns:
+        long -- Levenshtein distance
+    """
+    ret = None
+    if isinstance(x, str) and isinstance(y, str):
+        ret = editdistance.eval(x,y)
+    return ret
 
 
 def jaccard_similarity(srs_l, srs_r):
