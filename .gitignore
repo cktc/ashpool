@@ -1,6 +1,7 @@
 .eggs/
 .tox/
 *.bak
+*.ipynb
 *.pyc
 \.cache/
 \.hypothesis/
@@ -14,3 +15,4 @@ ashpool/tests/__pycache__/
 build/
 docs/_build/
 ipynb/
+ipynb/*.ipynb

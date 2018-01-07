@@ -132,6 +132,24 @@ def longest_member(srs):
     return max_len
 
 
+def depict(srs):
+    stats = {}
+    stats['dtype'] = srs.dtype
+    stats['kind'] = srs.dtype.kind
+    stats['series_len'] = len(srs)
+    stats['series_count_valid'] = srs.count()
+    stats['series_count_true'] = (srs == True).sum()
+    stats['series_count_false'] = (srs == False).sum()
+    stats['series_count_null'] = srs.isnull().sum()
+    stats['series_pct_valid'] = stats['series_count_valid'] / stats['series_len']
+    stats['series_pct_true'] = stats['series_count_true'] / stats['series_len']
+    stats['series_pct_false'] = stats['series_count_false'] / stats['series_len']
+    stats['series_pct_null'] = stats['series_count_null'] / stats['series_len']
+    
+    df_ret = pd.DataFrame.from_dict(stats, orient='index').sort_index().rename(columns={0:'values'})
+    return df_ret
+
+
 def get_combos(lst):
     """Returns list of combinations of members of list.
 
@@ -149,7 +167,6 @@ def get_combos(lst):
         if each > 0:
             combos.extend(combinations(lst, each + 1))
     return list(set(combos))
-
 
 
 def get_dtypes(dframe):
@@ -493,7 +510,7 @@ def best_id_pair(dframe_l, dframe_r, threshold=0.5):
     return df_result
 
 
-def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
+def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, diags=False):
     """Aligns and compares two dataframes
 
     Arguments:
@@ -503,7 +520,7 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
     Keyword Arguments:
         fields_l {list} -- list of columns names to compare from dframe_l (default: {None})
         fields_r {list} -- list of columns names to compare from dframe_r (default: {None})
-        gen_diffs {bool} -- whether or not to include a calculation of the difference in results (default: {True})
+        show_diff {bool} -- whether or not to include a calculation of the difference in results (default: {True})
 
     Returns:
         dataframe -- shows results of the comparison
@@ -522,17 +539,29 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, gen_diffs=True):
     display(df_best)
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
     df_temp_r = attach_temp_id(dframe_r, field_list=df_best['fld_r'].tolist())
-    return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, gen_diffs=gen_diffs)
+    return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, diags=diags)
 
 
-def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, gen_diffs=False, return_data=True):
+def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, show_diff=False, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False):
     '''TODO'''
+    
+    # Quick check that input arguments are valid
     assert len(fields_l) == len(fields_r), 'Comparison lists not of equal length / None.'
+    assert left_on in dframe_l.columns, '{} is not a column in dframe_l'.format(left_on)
+    assert right_on in dframe_r.columns, '{} is not a column in dframe_r'.format(right_on)
+    for each in fields_l:
+        assert each in dframe_l.columns, '{} is not a column in dframe_l'.format(each)
+    for each in fields_r:
+        assert each in dframe_r.columns, '{} is not a column in dframe_r'.format(each)
 
+    
+    # Prepare working dfs
     df_l = dframe_l.rename(columns={left_on: 'compid'}).copy()
     df_r = dframe_r.rename(columns={right_on: 'compid'}).copy()
-    fields = list(zip(fields_l, fields_r))
+    fields = zip(fields_l, fields_r)
 
+    print(fields)
+    
     final_fields = []
     for each in fields:
         if each[0] == each[1]:
@@ -546,32 +575,52 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
 
     # Do comparison
     vs_fields = []
-    for each in final_fields:
-        lbl = each[0] + ' vs ' + each[1]
+    for comparison_pair in final_fields:
+        lbl = comparison_pair[0] + ' vs ' + comparison_pair[1]
+        vs_fields.append(lbl)
         try:
-            df_out[lbl] = np.isclose(
-                df_out[each[0]], df_out[each[1]], rtol=0.000000001, atol=0.0001)
-            vs_fields.append(lbl)
+            df_out[lbl] = np.isclose(df_out[comparison_pair[0]], df_out[comparison_pair[1]], rtol=tol_pct, atol=tol_abs)
+            
+        except TypeError:
+#             traceback.print_exc()
+#             print('Looks like these are not numbers.')
+            if df_out[comparison_pair[0]].dtype.kind == df_out[comparison_pair[1]].dtype.kind == 'O':
+                df_out[lbl + ' leven_dist'] = df_out.apply(lambda x: leven_dist(x[comparison_pair[0]], x[comparison_pair[1]]), axis=1)
+                df_out.loc[df_out[lbl + ' leven_dist']==0, lbl] = True
+                df_out[lbl].fillna(value=False, inplace=True)
         except:
-            print('Cannot compare:', lbl)
-            print(each[0], type(each[0]), each[1], type(each[1]))
+            print('Cannot diff:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
-    df_out['vs_pct'] = old_div(sum([df_out[each] for each in vs_fields]), len(fields))
-
-    # Calc diffs
-    if gen_diffs:
-        for each in final_fields:
-            lbl = each[0] + ' - ' + each[1]
-            lbl2 = each[0] + ' / ' + each[1]
+    # Calc diff
+    if show_diff:
+        for comparison_pair in final_fields:
+            lbl = comparison_pair[0] + ' - ' + comparison_pair[1]
             try:
-                df_out[lbl] = df_out[each[0]] - df_out[each[1]]
-                df_out[lbl2] = old_div(df_out[each[0]], df_out[each[1]])
+                df_out[lbl] = df_out[comparison_pair[0]] - df_out[comparison_pair[1]]
             except:
-                print('Cannot calc diff:', lbl, lbl2)
-                print(each[0], type(each[0]), each[1], type(each[1]))
+                print('Cannot calc:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
+                
+    # Calc ratio
+    if show_ratio:
+        for comparison_pair in final_fields:
+            lbl2 = comparison_pair[0] + ' / ' + comparison_pair[1]
+            try:
+                df_out[lbl2] = df_out[comparison_pair[0]] / df_out[comparison_pair[1]]
+            except:
+                print('Cannot calc:', lbl2, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
+
+                
+    # Summary Results: Percentage of pairs matched
+    df_out['pct_pairs_matched'] = sum([df_out[each] for each in vs_fields]) / len(final_fields)
+    
     # Check if need to return data
-    if not return_data:
+    if not show_data:
         df_out = df_out.drop(ordered_fields, axis=1)
 
-    return df_out
+
+    if depict:
+        display(dframe_l.dtypes)
+    
+
+    return df_out.sort_values(['found','compid'], ascending=[False,True]).reset_index(drop=True)

@@ -50,8 +50,7 @@ df_r = pd.DataFrame({'dt_1': {0: datetime.datetime(2017, 9, 29, 00, 00, 00),
                      'str_2': {0: 'BC', 1: 'BC', 2: 'BC', 3: 'FG', 4: 'FG', 5: 'FG'},
                      'str_3': {0: 'u', 1: 'y', 2: 'x', 3: 'w', 4: 'v', 5: np.nan},
                      'int_2': {0: 1, 1: 2, 2: 3, 3: 1, 4: 2, 5: 3}})
-lst_text = lists(elements=text(alphabet=list(string.printable),
-                          min_size=4, max_size=10), min_size=1).example()
+lst_text = lists(elements=text(alphabet=list(string.printable), min_size=4, max_size=10), min_size=1).example()
 
 
 @given(text(min_size=3))
@@ -174,3 +173,11 @@ def test_reconcile(df_t, df_u):
     assert 'compid' in df_result.columns
     assert 'found' in df_result.columns
     assert isinstance(reconcile(df_t, df_u, fields_l=['flt_1'], fields_r=['flt_1']), pd.DataFrame)
+
+
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+def test_differ(df_t, df_u):
+    df_result = differ(df_t, df_u, left_on='txt_1', right_on='txt_1', fields_l=['str_1','flt_1'], fields_r=['str_1','flt_1'])
+    assert isinstance(df_result, pd.DataFrame)
+    assert 'compid' in df_result.columns
+    assert 'found' in df_result.columns
