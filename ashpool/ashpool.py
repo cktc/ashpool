@@ -510,7 +510,7 @@ def best_id_pair(dframe_l, dframe_r, threshold=0.5):
     return df_result
 
 
-def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, diags=False):
+def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False):
     """Aligns and compares two dataframes
 
     Arguments:
@@ -539,7 +539,7 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
     display(df_best)
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
     df_temp_r = attach_temp_id(dframe_r, field_list=df_best['fld_r'].tolist())
-    return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, diags=diags)
+    return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, depict=depict)
 
 
 def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, show_diff=False, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False):
