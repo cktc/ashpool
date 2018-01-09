@@ -1,8 +1,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-'''Ashpool - A Comparison Library
-'''
+"""Ashpool - A Comparison Library
+"""
 
 import string
 import uuid
@@ -19,7 +19,6 @@ from past.utils import old_div
 
 import editdistance
 
-# print(string.punctuation, type(unicode(string.punctuation,'utf-8')))
 TRAN_TBL = str.maketrans(str(string.punctuation), u' ' * len(string.punctuation))
 
 
@@ -29,8 +28,6 @@ def make_good_label(x_value):
     Arguments:
         x_value {string} -- or something that can be converted to a string
     """
-    # if isinstance(x_value, str):
-    #     x_value = x_value.encode('ascii', 'ignore')
     return '_'.join(str(x_value).translate(TRAN_TBL).split()).lower()
 
 
@@ -42,6 +39,7 @@ def mash(dframe, flds=None, keep_zeros=False):
 
     Keyword Arguments:
         flds {list} -- List of column nmaes (default: {None})
+
         keep_zeros {bool} -- True will keep zeros. (default: {False})
 
     Returns:
@@ -57,27 +55,27 @@ def mash(dframe, flds=None, keep_zeros=False):
     return df_work
 
 
-def flatten_on(dframe, flatten=[], agg_ovr={}):
-    """Returns dataframe groupby all non_num fields except those listed in flatten list
+# def flatten_on(dframe, flatten=[], agg_ovr={}):
+#     """Returns dataframe groupby all non_num fields except those listed in flatten list
 
-    Arguments:
-        dframe {pandas.DataFrame} -- input dataframe
+#     Arguments:
+#         dframe {pandas.DataFrame} -- input dataframe
 
-    Returns:
-        pandas.DataFrame -- same as source dataframe but flattened (i.e., categories removed and data aggregated over other non-numeric columns)
-    """
-    df_work = dframe.copy()
-    df_dtypes = get_dtypes(df_work)
-    fltr_non_num = df_dtypes[~df_dtypes['obj_kind'].isin(
-        ['f', 'i'])]['fld'].tolist()
-    fltr = [x.encode('UTF8') for x in fltr_non_num]
-    fltr_num = df_dtypes[~df_dtypes['fld'].isin(fltr_non_num)]['fld'].tolist()
-    for each in flatten:
-        fltr.remove(each)
-    agg_dict = dict(list(zip(fltr_num, repeat(sum))))
-    agg_dict.update(agg_ovr)
-    df_return = df_work.groupby(fltr).agg(agg_dict).reset_index()
-    return df_return
+#     Returns:
+#         pandas.DataFrame -- same as source dataframe but flattened (i.e., categories removed and data aggregated over other non-numeric columns)
+#     """
+#     df_work = dframe.copy()
+#     df_dtypes = get_dtypes(df_work)
+#     fltr_non_num = df_dtypes[~df_dtypes['obj_kind'].isin(
+#         ['f', 'i'])]['fld'].tolist()
+#     fltr = [x.encode('UTF8') for x in fltr_non_num]
+#     fltr_num = df_dtypes[~df_dtypes['fld'].isin(fltr_non_num)]['fld'].tolist()
+#     for each in flatten:
+#         fltr.remove(each)
+#     agg_dict = dict(list(zip(fltr_num, repeat(sum))))
+#     agg_dict.update(agg_ovr)
+#     df_return = df_work.groupby(fltr).agg(agg_dict).reset_index()
+#     return df_return
 
 
 def completeness(srs):
@@ -107,14 +105,14 @@ def uniqueness(srs):
     if srs[srs.notnull()].empty:
         return 0.0
 
-    u_scr = old_div(float(srs.nunique()), srs.count())
-    if u_scr == 1:
-        print('{} is perfectly unique and covers {} of rows'.format(srs.name, old_div(float(srs.notnull().sum()), srs.shape[0])))
+    u_scr = float(srs.nunique()) / srs.count()
+    # if u_scr == 1:
+    #     print('{} is perfectly unique and covers {:.0%} of rows'.format(srs.name, u_scr))
     return u_scr
 
 
-def longest_member(srs):
-    '''return the max len() of any member in series.
+def longest_element(srs):
+    '''return the max len() of any element in series.
 
     Arguments:
         srs {pandas.Series}
@@ -132,20 +130,29 @@ def longest_member(srs):
     return max_len
 
 
-def depict(srs):
+def depiction(srs):
+    """Returns description (depiction) of series.
+
+    Arguments:
+        srs {pandas.Series}
+
+    Returns:
+        pandas.DataFrame
+    """
     stats = {}
     stats['dtype'] = srs.dtype
     stats['kind'] = srs.dtype.kind
     stats['series_len'] = len(srs)
-    stats['series_count_valid'] = srs.count()
-    stats['series_count_true'] = (srs == True).sum()
-    stats['series_count_false'] = (srs == False).sum()
-    stats['series_count_null'] = srs.isnull().sum()
-    stats['series_pct_valid'] = stats['series_count_valid'] / stats['series_len']
-    stats['series_pct_true'] = stats['series_count_true'] / stats['series_len']
-    stats['series_pct_false'] = stats['series_count_false'] / stats['series_len']
-    stats['series_pct_null'] = stats['series_count_null'] / stats['series_len']
-    
+    if stats['series_len'] > 0:
+        stats['series_count_valid'] = srs.count()
+        stats['series_count_true'] = (srs == True).sum()
+        stats['series_count_false'] = (srs == False).sum()
+        stats['series_count_null'] = srs.isnull().sum()
+        stats['series_pct_valid'] = stats['series_count_valid'] / stats['series_len']
+        stats['series_pct_true'] = stats['series_count_true'] / stats['series_len']
+        stats['series_pct_false'] = stats['series_count_false'] / stats['series_len']
+        stats['series_pct_null'] = stats['series_count_null'] / stats['series_len']
+
     df_ret = pd.DataFrame.from_dict(stats, orient='index').sort_index().rename(columns={0:'values'})
     return df_ret
 
@@ -166,7 +173,9 @@ def get_combos(lst):
     for each in range(len(lst)):
         if each > 0:
             combos.extend(combinations(lst, each + 1))
-    return list(set(combos))
+    lst_return = list(set(combos))
+    lst_return.sort(key=lambda t: len(t))
+    return lst_return
 
 
 def get_dtypes(dframe):
@@ -191,13 +200,13 @@ def rate_series(dframe):
     df_work['obj_kind'] = df_work.fld.apply(lambda x: dframe[x].dtype.kind)
     df_work['completeness'] = df_work['fld'].apply(lambda x: completeness(dframe[x]))
     df_work['uniqueness'] = df_work['fld'].apply(lambda x: uniqueness(dframe[x]))
-    df_work['longest_member'] = df_work['fld'].apply(lambda x: longest_member(dframe[x]))
+    df_work['longest_element'] = df_work['fld'].apply(lambda x: longest_element(dframe[x]))
     df_work.sort_values(['obj_type', 'completeness', 'uniqueness'], ascending=[False, False, False])
     return df_work
 
 
 def get_sorted_fields(dframe):
-    """return lists of fields sorted by most_complete, most_unique, and non_object
+    """Returns list of fields sorted by most_complete, most_unique, and non_object
 
     Arguments:
         dframe {pandas.DataFrame} -- Input dataframe.
@@ -208,9 +217,9 @@ def get_sorted_fields(dframe):
     df_work = rate_series(dframe)
     fltr_om = df_work['obj_kind'].isin(['O', 'M'])
     flds_srt_completeness = df_work[fltr_om].sort_values(
-        ['completeness', 'longest_member'], ascending=[False, True])['fld'].tolist()
+        ['completeness', 'longest_element'], ascending=[False, True])['fld'].tolist()
     flds_srt_uniqueness = df_work[fltr_om].sort_values(
-        ['uniqueness', 'completeness', 'longest_member'], ascending=[False, False, True])['fld'].tolist()
+        ['uniqueness', 'completeness', 'longest_element'], ascending=[False, False, True])['fld'].tolist()
     flds_non_object = df_work[~fltr_om]['fld'].tolist()
     return {'most_complete': flds_srt_completeness, 'most_unique': flds_srt_uniqueness, 'non_object': flds_non_object}
 
@@ -223,6 +232,7 @@ def attach_temp_id(dframe, field_list=None, id_label='tempid', append_uuid=False
 
     Keyword Arguments:
         field_list {list} -- List of columns to use to build tempid. (default: {None})
+
         append_uuid {bool} -- True appends uuid. (default: {False})
 
     Returns:
@@ -267,18 +277,21 @@ def get_unique_fields(dframe, candidate_flds, threshold=1.0, max_member_length=3
 
     Arguments:
         dframe {pandas.DataFrame} -- Input dataframe.
+
         candidate_flds {list} -- List of column names.
 
     Keyword Arguments:
         threshold {float} -- Uniqueness threshold where 1 is perfectly unique (default: {1})
+
         max_member_length {int} -- Used to filter out columns which have members that are too lengthy. (default: {30})
+
         show_all {bool} -- Show all results even if uniqueness does not meet threshold. (default: {False})
 
     Returns:
-        list -- List of column names that combine to create a unique ID.
+        list -- List of column names that combine to create a unique ID that meets the uniqueness threshold. Stops looking after finding the first list that meets threshold.
     """
     summary = []
-    flds_work = [x for x in candidate_flds if longest_member(dframe[x]) <= max_member_length]
+    flds_work = [x for x in candidate_flds if longest_element(dframe[x]) <= max_member_length]
     for each in get_combos(flds_work):
         df_temp = attach_temp_id(dframe[list(each)], field_list=list(each))  # .copy()
         df_temp['tempid_makeup'] = str(each)
@@ -294,20 +307,21 @@ def get_unique_fields(dframe, candidate_flds, threshold=1.0, max_member_length=3
 
     if show_all:
         return summary
-
+    print(summary)
     assert summary[0][1] >= threshold, 'Does not meet threshold of {}, best found was {}'.format(threshold, summary[0][1])
     return
 
 
-def attach_unique_id(dframe, threshold=0.5):
+def attach_unique_id(dframe, threshold=1.0):
     """Return a new dataframe based on input dframe with unique fields attached.
 
     Arguments:
         dframe {pandas.DataFrame} -- Source dataframe
+
         threshold {float} -- Specify how unique 0.0 to 1.0 (most unique)
 
     Returns:
-        pandas.DataFrame -- datatframe with most unique fields attached.
+        pandas.DataFrame -- Dataframe with a new id (u_id), which meets the threshold for uniqueness. u_id is based on a combination of non-numeric series, trying to meet the uniqueness threshold with the fewest number of series.
     """
     flds = get_sorted_fields(dframe)
     u_flds = get_unique_fields(dframe, candidate_flds=flds['most_unique'], threshold=threshold)
@@ -322,6 +336,7 @@ def coveredness(srs_l, srs_r):
 
     Arguments:
         srs_l {pandas.Series} -- Source series.
+
         srs_r {pandas.Series} -- Target series.
 
     Returns:
@@ -335,17 +350,20 @@ def coveredness(srs_l, srs_r):
 
 def leven_dist(x, y):
     """Returns Levenshtein distance for two strings and a null if not valid strings.
-    
+
     Arguments:
         x {str} -- First string.
+
         y {str} -- Second string.
-    
+
     Returns:
         long -- Levenshtein distance
     """
     ret = None
     if isinstance(x, str) and isinstance(y, str):
         ret = editdistance.eval(x,y)
+    else:
+        warn('Can only calculate Levnshtein distance for strings.')
     return ret
 
 
@@ -368,6 +386,7 @@ def has_name_match(srs_l, dframe_r):
 
     Arguments:
         srs_l {pandas.Series} -- Source series.
+
         dframe_r {pandas.DataFrame} -- Dataframe to search.
 
     Returns:
@@ -383,6 +402,7 @@ def get_most_coveredness(srs_l, dframe_r, top_limit=3):
 
     Arguments:
         srs_l {pandas.Series} -- Input series.
+
         dframe_r {pandas.DataFrame} -- Target dataframe to search.
 
     Keyword Arguments:
@@ -406,6 +426,7 @@ def check_coveredness(dframe_l, dframe_r):
 
     Arguments:
         dframe_l {pandas.DataFrame} -- Source dataframe.
+
         dframe_r {pandas.DataFrame} -- Target dataframe.
 
     Returns:
@@ -419,7 +440,7 @@ def check_coveredness(dframe_l, dframe_r):
 
     df_work['completeness'] = df_work['fld'].apply(lambda x: completeness(dframe_l[x]))
     df_work['uniqueness'] = df_work['fld'].apply(lambda x: uniqueness(dframe_l[x]))
-    df_work['longest_member'] = df_work['fld'].apply(lambda x: longest_member(dframe_l[x]))
+    df_work['longest_element'] = df_work['fld'].apply(lambda x: longest_element(dframe_l[x]))
     return df_work
 
 
@@ -428,11 +449,14 @@ def suggest_id_pairs(dframe_l, dframe_r, threshold=0.5, incl_all_dtypes=False, i
 
     Arguments:
         dframe_l {pandas.DataFrame} -- Left dataframe.
+
         dframe_r {pandas.DataFrame} -- Right dataframe.
 
     Keyword Arguments:
         threshold {float} -- Value between 0 and 1 that represents minimum coveredness. (default: {0.5})
+
         incl_all_dtypes {bool} -- Try to use all dtypes (not just object) if True. (default: {False})
+
         incl_all_pairs {bool} -- Show all pairs regardless of threshold. (default: {False})
 
     Returns:
@@ -475,6 +499,8 @@ def cum_uniq(dframe, flds=None):
     Returns:
         list -- List of floats representing incremental addition to uniqueness as more columns are used to create a tempid.
     """
+    # assert flds, 'No list of fields supplied.'
+
     flds_work = [f for f in flds if f in dframe.columns]
     u_res = []
 
@@ -489,6 +515,7 @@ def best_id_pair(dframe_l, dframe_r, threshold=0.5):
 
     Arguments:
         dframe_l {pandas.DataFrame} -- Left dataframe.
+
         dframe_r {pandas.DataFrame} -- Right dataframe.
 
     Keyword Arguments:
@@ -515,11 +542,14 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
 
     Arguments:
         dframe_l {pandas.DataFrame} -- left dataframe
+
         dframe_r {pandas.DataFrame} -- right dataframe
 
     Keyword Arguments:
         fields_l {list} -- list of columns names to compare from dframe_l (default: {None})
+
         fields_r {list} -- list of columns names to compare from dframe_r (default: {None})
+
         show_diff {bool} -- whether or not to include a calculation of the difference in results (default: {True})
 
     Returns:
@@ -535,16 +565,46 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
         warn('Returning empty dataframe.')
         return pd.DataFrame()
 
-    print('Diags:')
+    print('\nAlignment Diags:')
     display(df_best)
+
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
     df_temp_r = attach_temp_id(dframe_r, field_list=df_best['fld_r'].tolist())
     return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, depict=depict)
 
 
-def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, show_diff=False, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False):
-    '''TODO'''
-    
+def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, show_diff=False, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False, **kwargs):
+    """Returns dataframe showing comparison between fields_l and fields_r. Dataframes are first aligned using left_on and right_on.
+
+    Arguments:
+        dframe_l {pandas.DataFrame} -- Left dataframe
+
+        dframe_r {pandas.DataFrame} -- right dataframe
+
+        left_on {list} -- list of series names
+
+        right_on {list} -- list of series names
+
+    Keyword Arguments:
+        fields_l {list} -- List of series names to compare (default: {None})
+
+        fields_r {list} -- List of series to compare (default: {None})
+
+        show_diff {bool} -- If true return difference between comparison series (default: {False})
+
+        show_ratio {bool} -- If true return ratio between comparison series (default: {False})
+
+        show_data {bool} -- If true return data series in returned results (default: {True})
+
+        tol_pct {float} -- Tolerance in percentage terms when considering matches in numerical data (default: {0})
+
+        tol_abs {float} -- Tolerance in units when considering matches in numerical data (default: {0})
+
+        depict {bool} -- If true return stats regarding differ results per comparison pair (depiction) (default: {False})
+
+    Returns:
+        pandas.DataFrame -- Dataframe showing comparison between fields_l and fields_r.
+    """
     # Quick check that input arguments are valid
     assert len(fields_l) == len(fields_r), 'Comparison lists not of equal length / None.'
     assert left_on in dframe_l.columns, '{} is not a column in dframe_l'.format(left_on)
@@ -553,15 +613,17 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
         assert each in dframe_l.columns, '{} is not a column in dframe_l'.format(each)
     for each in fields_r:
         assert each in dframe_r.columns, '{} is not a column in dframe_r'.format(each)
+    if 'gen_diffs' in kwargs:
+        warn('Please use show_diff instead of gen_diffs')
 
-    
+
     # Prepare working dfs
     df_l = dframe_l.rename(columns={left_on: 'compid'}).copy()
     df_r = dframe_r.rename(columns={right_on: 'compid'}).copy()
     fields = zip(fields_l, fields_r)
 
-    print(fields)
-    
+    # print(fields)
+
     final_fields = []
     for each in fields:
         if each[0] == each[1]:
@@ -580,15 +642,13 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
         vs_fields.append(lbl)
         try:
             df_out[lbl] = np.isclose(df_out[comparison_pair[0]], df_out[comparison_pair[1]], rtol=tol_pct, atol=tol_abs)
-            
+
         except TypeError:
-#             traceback.print_exc()
-#             print('Looks like these are not numbers.')
             if df_out[comparison_pair[0]].dtype.kind == df_out[comparison_pair[1]].dtype.kind == 'O':
-                df_out[lbl + ' leven_dist'] = df_out.apply(lambda x: leven_dist(x[comparison_pair[0]], x[comparison_pair[1]]), axis=1)
-                df_out.loc[df_out[lbl + ' leven_dist']==0, lbl] = True
-                df_out[lbl].fillna(value=False, inplace=True)
-        except:
+                df_out[lbl + ' leven_dist'] = df_out.apply(lambda x, cp=comparison_pair: leven_dist(x[cp[0]], x[cp[1]]), axis=1)
+                df_out.loc[df_out[lbl + ' leven_dist']!=0, lbl] = False
+                df_out[lbl].fillna(value=True, inplace=True)
+        except Exception as e:
             print('Cannot diff:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
     # Calc diff
@@ -597,30 +657,34 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             lbl = comparison_pair[0] + ' - ' + comparison_pair[1]
             try:
                 df_out[lbl] = df_out[comparison_pair[0]] - df_out[comparison_pair[1]]
-            except:
+            except Exception as e:
                 print('Cannot calc:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
-                
+
     # Calc ratio
     if show_ratio:
         for comparison_pair in final_fields:
             lbl2 = comparison_pair[0] + ' / ' + comparison_pair[1]
             try:
                 df_out[lbl2] = df_out[comparison_pair[0]] / df_out[comparison_pair[1]]
-            except:
+            except Exception as e:
                 print('Cannot calc:', lbl2, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
-                
+
     # Summary Results: Percentage of pairs matched
     df_out['pct_pairs_matched'] = sum([df_out[each] for each in vs_fields]) / len(final_fields)
-    
+
     # Check if need to return data
     if not show_data:
         df_out = df_out.drop(ordered_fields, axis=1)
 
-
     if depict:
-        display(dframe_l.dtypes)
-    
+        print('Alignment Stats: \n{}\n'.format(df_out['found'].value_counts(ascending=False).to_dict()))
+        for each in final_fields:
+            print(each)
+            df_l_ = depiction(df_out[each[0]]).rename(columns={'values': each[0]})
+            df_r_ = depiction(df_out[each[1]]).rename(columns={'values': each[1]})
+            df_s_ = pd.merge(df_l_, df_r_, left_index=True, right_index=True)
+            display(df_s_)
 
     return df_out.sort_values(['found','compid'], ascending=[False,True]).reset_index(drop=True)

@@ -89,6 +89,13 @@ def test_uniqueness(srs_t):
     assert isinstance(uniqueness(srs_t), float)
 
 
+@given(series(dtype=np.unicode_))
+@example(series(dtype=np.int_).example())
+@example(series(dtype=bool).example())
+def test_depiction(srs_t):
+    assert isinstance(depiction(srs_t), pd.DataFrame)
+
+
 @given(series(dtype=np.unicode_), series(dtype=np.unicode_))
 @example(series(dtype=np.int_).example(), series(dtype=np.int_).example())
 @example(series(dtype=float).example(), series(dtype=float).example())
