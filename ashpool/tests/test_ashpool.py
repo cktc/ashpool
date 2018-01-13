@@ -120,7 +120,7 @@ def test_rate_series():
     assert df_result['fld'].tolist() == df_l.columns.tolist()
 
 
-@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('int_2', dtype=np.int_), column('int_3', dtype=np.int_), column('flt_1', dtype=float), column('flt_2', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('int_2', dtype=np.int_), column('int_3', dtype=np.int_), column('flt_1', dtype=float), column('flt_2', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)))
 def test_rate_series_2(df_l):
     df_result = rate_series(df_l)
     assert df_result['fld'].tolist() == df_l.columns.tolist()
@@ -148,7 +148,7 @@ def test_has_name_match():
     assert isinstance(has_name_match(df_l['str_1'], df_r), bool)
 
 
-@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)))
 def test_suggest_id_pairs(df_t, df_u):
     df_result = suggest_id_pairs(df_l, df_r)
     assert isinstance(df_result, pd.DataFrame)
@@ -167,13 +167,13 @@ def test_cum_uniq():
     assert isinstance(cum_uniq(df_l, df_l.columns.tolist()), list)
 
 
-@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)))
 def test_best_id_pair(df_t, df_u):
     assert isinstance(best_id_pair(df_l, df_r), pd.DataFrame)
     assert isinstance(best_id_pair(df_t, df_u, threshold=0.01), pd.DataFrame)
 
 
-@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)))
 def test_reconcile(df_t, df_u):
     df_result = reconcile(df_l, df_r, fields_l=['flt_1'], fields_r=['flt_1'])
     assert isinstance(df_result, pd.DataFrame)
@@ -182,7 +182,7 @@ def test_reconcile(df_t, df_u):
     assert isinstance(reconcile(df_t, df_u, fields_l=['flt_1'], fields_r=['flt_1']), pd.DataFrame)
 
 
-@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes())], index=indexes(dtype=np.int_, min_size=1)))
+@given(data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)), data_frames([column('txt_1', elements=sampled_from(lst_text)), column('str_1', dtype=np.unicode_), column('int_1', dtype=np.int_), column('flt_1', dtype=float), column('dt_1', elements=datetimes(min_value=pd.Timestamp.min, max_value=pd.Timestamp.max))], index=indexes(dtype=np.int_, min_size=1)))
 def test_differ(df_t, df_u):
     df_result = differ(df_t, df_u, left_on='txt_1', right_on='txt_1', fields_l=['str_1','flt_1'], fields_r=['str_1','flt_1'])
     assert isinstance(df_result, pd.DataFrame)
