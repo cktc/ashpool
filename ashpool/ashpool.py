@@ -328,7 +328,7 @@ def attach_unique_id(dframe, threshold=1.0):
     """
     flds = get_sorted_fields(dframe)
     u_flds = get_unique_fields(dframe, candidate_flds=flds['most_unique'], threshold=threshold)
-    print('!!!u_flds:', u_flds)
+    # print('u_flds:', u_flds)
     assert u_flds, 'Did not get valid unique fields'
     df_work = attach_temp_id(dframe, field_list=u_flds, id_label='u_id')
     return df_work[['u_id'] + flds['most_unique'] + sorted(flds['non_object'])]
@@ -362,11 +362,10 @@ def leven_dist(x, y):
     Returns:
         long -- Levenshtein distance
     """
-    ret = None
-    if isinstance(x, str) and isinstance(y, str):
-        ret = editdistance.eval(x,y)
-    else:
-        warn('Can only calculate Levnshtein distance for strings.')
+    ret = editdistance.eval(x,y)
+    if isinstance(x, float) or isinstance(y, float):
+        warn('Can only calculate Levenshtein distance for strings.')
+        return None
     return ret
 
 
