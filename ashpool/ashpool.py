@@ -11,6 +11,7 @@ from builtins import (ascii, bytes, chr, dict, filter, hex, input, int, map,
 from itertools import chain, combinations, repeat
 from operator import itemgetter
 from warnings import warn
+import re
 
 import numpy as np
 import pandas as pd
@@ -19,7 +20,8 @@ from past.utils import old_div
 
 import editdistance
 
-TRAN_TBL = str.maketrans(str(string.punctuation), u' ' * len(string.punctuation))
+# TRAN_TBL = str.maketrans({key: ' ' for key in string.punctuation})
+mgl_pattern = re.compile('[%s]' % re.escape(string.punctuation))
 
 
 def make_good_label(x_value):
@@ -28,7 +30,8 @@ def make_good_label(x_value):
     Arguments:
         x_value {string} -- or something that can be converted to a string
     """
-    return '_'.join(str(x_value).translate(TRAN_TBL).split()).lower()
+    return '_'.join(mgl_pattern.sub(' ', str(x_value)).split()).lower()
+    # return '_'.join(x_value.translate(TRAN_TBL).split()).lower()
 
 
 def mash(dframe, flds=None, keep_zeros=False):
@@ -537,7 +540,7 @@ def best_id_pair(dframe_l, dframe_r, threshold=0.5):
     return df_result
 
 
-def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False):
+def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False, breaks_only=False):
     """Aligns and compares two dataframes
 
     Arguments:
@@ -551,6 +554,8 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
         fields_r {list} -- list of columns names to compare from dframe_r (default: {None})
 
         show_diff {bool} -- whether or not to include a calculation of the difference in results (default: {True})
+
+        breaks_only {bool} -- return only those rows that are not matched (default: {True})
 
     Returns:
         dataframe -- shows results of the comparison
@@ -567,10 +572,17 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
 
     print('\nAlignment Diags:')
     display(df_best)
+    if df_best['cum_uniq_l'].max() < 0.5:
+        warn('Series from dataframes do not align well. id_scr low.')
 
     df_temp_l = attach_temp_id(dframe_l, field_list=df_best['fld_l'].tolist())
     df_temp_r = attach_temp_id(dframe_r, field_list=df_best['fld_r'].tolist())
-    return differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, depict=depict)
+
+    df_return = differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, depict=depict)
+    if breaks_only:
+        return df_return[df_return['pct_pairs_matched']!=1]
+
+    return df_return
 
 
 def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, show_diff=False, show_ratio=False, show_data=True, tol_pct=0.0, tol_abs=0.0, depict=False, **kwargs):
