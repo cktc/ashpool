@@ -14,6 +14,7 @@ ashpool.differ(df_l, df_r, left_on='unique_id_l', right_on='unique_id_r', fields
 ```
 #### Example
 df_l:
+
 |team|player_count|mascot|
 |--- |--- |--- |
 |Gryffindor|20|Lion|
@@ -23,6 +24,7 @@ df_l:
 |Gridpoint|8|Molly|
 
 df_r:
+
 |team|player_count|mascot|
 |--- |--- |--- |
 |Asgard|3|Hammer|
@@ -86,6 +88,7 @@ Start with this, a dataframe where none of the series can be used as unique keys
 |Mrs.|Drew|Williams|
 
 ...adds 'u_id' column, which is a unique identifier that is based upon existing data.
+
 |u_id|salutation|first_name|surname|
 |--- |--- |--- |--- |
 |MR_SAM_CHOW|Mr.|Sam|Chow|
@@ -112,6 +115,7 @@ ashpool.reconcile(df_l, df_r, 'series_in_df_l', 'series_in_df_r')
 It will take the following datasets which do not have unique keys...
 
 df_l:
+
 |salutation|first_name|surname|age_reported|
 |---|---|---|---|
 |Mr.|Sam|Chow|41|
@@ -124,6 +128,7 @@ df_l:
 |Mrs.|Drew|Williams|32|
 
 df_r:
+
 |salutation|first_name|surname|age_real|
 |--- |--- |--- |--- |
 |Mr.|Sam|Chow|40|
@@ -140,6 +145,7 @@ df_r:
 ashpool.reconcile(df_l, df_r, 'age_reported', 'age_real')
 ```
 Returns:
+
 |index|compid|found|age_reported|age_real|age_reported vs age_real|age_reported - age_real|pct_pairs_matched|
 |--- |--- |--- |--- |--- |--- |--- |--- |
 |0|DREW_MRS_CHOW|both|32|30|False|2|0.0000|
