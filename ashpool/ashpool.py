@@ -21,7 +21,7 @@ from past.utils import old_div
 import editdistance
 
 # TRAN_TBL = str.maketrans({key: ' ' for key in string.punctuation})
-mgl_pattern = re.compile('[%s]' % re.escape(string.punctuation))
+MGL_PATTERN = re.compile('[%s]' % re.escape(string.punctuation))
 
 
 def make_good_label(x_value):
@@ -30,7 +30,7 @@ def make_good_label(x_value):
     Arguments:
         x_value {string} -- or something that can be converted to a string
     """
-    return '_'.join(mgl_pattern.sub(' ', str(x_value)).split()).lower()
+    return '_'.join(MGL_PATTERN.sub(' ', str(x_value)).split()).lower()
     # return '_'.join(x_value.translate(TRAN_TBL).split()).lower()
 
 
@@ -362,7 +362,7 @@ def leven_dist(x, y):
     Returns:
         long -- Levenshtein distance
     """
-    ret = editdistance.eval(x,y)
+    ret = editdistance.eval(x, y)
     if isinstance(x, float) or isinstance(y, float):
         warn('Can only calculate Levenshtein distance for strings.')
         return None
@@ -380,7 +380,7 @@ def oneness(srs_l, srs_r):
     '''TODO'''
     map_len_l = len(dict(list(zip(srs_l.tolist(), srs_r.tolist()))))
     map_len_r = len(dict(list(zip(srs_r.tolist(), srs_l.tolist()))))
-    return old_div(min(map_len_l, map_len_r), max(map_len_l, map_len_r))
+    return min(map_len_l, map_len_r) / max(map_len_l, map_len_r)
 
 
 def has_name_match(srs_l, dframe_r):
@@ -579,7 +579,7 @@ def reconcile(dframe_l, dframe_r, fields_l=None, fields_r=None, show_diff=True, 
 
     df_return = differ(df_temp_l, df_temp_r, left_on='tempid', right_on='tempid', fields_l=fields_l, fields_r=fields_r, show_diff=show_diff, show_ratio=show_ratio, show_data=show_data, tol_pct=tol_pct, tol_abs=tol_abs, depict=depict)
     if breaks_only:
-        return df_return[df_return['pct_pairs_matched']!=1]
+        return df_return[df_return['pct_pairs_matched'] != 1]
 
     return df_return
 
@@ -657,10 +657,10 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
         except TypeError:
             if df_out[comparison_pair[0]].dtype.kind == df_out[comparison_pair[1]].dtype.kind == 'O':
                 df_out[lbl + ' leven_dist'] = df_out.apply(lambda x, cp=comparison_pair: leven_dist(x[cp[0]], x[cp[1]]), axis=1)
-                df_out.loc[df_out[lbl + ' leven_dist']!=0, lbl] = False
+                df_out.loc[df_out[lbl + ' leven_dist'] != 0, lbl] = False
                 df_out[lbl].fillna(value=True, inplace=True)
         except Exception as e:
-            print('Cannot diff:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
+            print('Cannot diff:', lbl, '.', comparison_pair[0], type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
     # Calc diff
     if show_diff:
@@ -669,7 +669,7 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             try:
                 df_out[lbl] = df_out[comparison_pair[0]] - df_out[comparison_pair[1]]
             except Exception as e:
-                print('Cannot calc:', lbl, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
+                print('Cannot calc:', lbl, '.', comparison_pair[0], type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
 
     # Calc ratio
@@ -679,7 +679,7 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             try:
                 df_out[lbl2] = df_out[comparison_pair[0]] / df_out[comparison_pair[1]]
             except Exception as e:
-                print('Cannot calc:', lbl2, '.', comparison_pair[0],  type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
+                print('Cannot calc:', lbl2, '.', comparison_pair[0], type(comparison_pair[0]), comparison_pair[1], type(comparison_pair[1]))
 
 
     # Summary Results: Percentage of pairs matched
@@ -698,4 +698,4 @@ def differ(dframe_l, dframe_r, left_on, right_on, fields_l=None, fields_r=None, 
             df_s_ = pd.merge(df_l_, df_r_, left_index=True, right_index=True)
             display(df_s_)
 
-    return df_out.sort_values(['found','compid'], ascending=[False,True]).reset_index(drop=True)
+    return df_out.sort_values(['found', 'compid'], ascending=[False, True]).reset_index(drop=True)
